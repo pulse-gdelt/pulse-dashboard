@@ -4,5 +4,5 @@ module.exports = {
   },
   variants: {},
   plugins: [],
-  purge: ["./src/**/*.tsx"],
+  purge: ["./src/**/*.{js,ts,jsx,tsx}"],
 };
