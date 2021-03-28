@@ -1,4 +1,17 @@
 import React from "react";
+import { ScatterPlot, data } from "../../components/ScatterPlot";
+
+export function CenterPane(): JSX.Element {
+  return (
+    <>
+      <div className="my-1 -mx-1 h-full bg-white shadow rounded-lg">
+        <div className="px-4 py-5 h-full w-full flex">
+          <ScatterPlot dataParam={data} />
+        </div>
+      </div>
+    </>
+  );
+}
 
 export function Dashboard(): JSX.Element {
   return (
@@ -17,9 +30,7 @@ export function Dashboard(): JSX.Element {
       </div>
 
       <div className="flex flex-col my-1 px-1 w-3/5">
-        <div className="my-1 -mx-1 h-full bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6" />
-        </div>
+        <CenterPane />
       </div>
 
       <div className="flex flex-col my-1 px-1 w-1/5 overflow-hidden">
