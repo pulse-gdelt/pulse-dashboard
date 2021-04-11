@@ -143,72 +143,8 @@ export function Articles({ data }: { data: any }): JSX.Element {
   return (
     <div className="m-1 h-full shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6 overflow-hidden">
       <h3 className="text-lg leading-6 font-medium text-gray-900 mb-6">News Event Information</h3>
-      <ul className="divide-y divide-gray-200">
-        {/* <p className="overflow-hidden">{JSON.stringify(data.datapoint, null, 2)}</p> */}
+      <ul>
         {pane}
-        {/* <li className="relative bg-white py-5 px-4 hover:bg-gray-50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600">
-          <div className="flex justify-between space-x-3">
-            <div className="min-w-0 flex-1">
-              <a href="#" className="block focus:outline-none">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900 truncate">BBC</p>
-                <p className="text-sm text-gray-500 truncate">Velit placeat sit ducimus non sed</p>
-              </a>
-            </div>
-            <time dateTime="2021-01-27T16:35" className="flex-shrink-0 whitespace-nowrap text-sm text-gray-500">
-              2h ago
-            </time>
-          </div>
-          <div className="mt-1">
-            <p className="line-clamp-2 text-sm text-gray-600">
-              Doloremque dolorem maiores assumenda dolorem facilis. Velit vel in a rerum natus facere. Enim rerum eaque
-              qui facilis. Numquam laudantium sed id dolores omnis in. Eos reiciendis deserunt maiores et accusamus quod
-              dolor.
-            </p>
-          </div>
-        </li>
-        <li className="relative bg-white py-5 px-4 hover:bg-gray-50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600">
-          <div className="flex justify-between space-x-3">
-            <div className="min-w-0 flex-1">
-              <a href="#" className="block focus:outline-none">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900 truncate">Al Jazeera</p>
-                <p className="text-sm text-gray-500 truncate">Velit placeat sit ducimus non sed</p>
-              </a>
-            </div>
-            <time dateTime="2021-01-27T16:35" className="flex-shrink-0 whitespace-nowrap text-sm text-gray-500">
-              12h ago
-            </time>
-          </div>
-          <div className="mt-1">
-            <p className="line-clamp-2 text-sm text-gray-600">
-              Doloremque dolorem maiores assumenda dolorem facilis. Velit vel in a rerum natus facere. Enim rerum eaque
-              qui facilis. Numquam laudantium sed id dolores omnis in. Eos reiciendis deserunt maiores et accusamus quod
-              dolor.
-            </p>
-          </div>
-        </li>
-        <li className="relative bg-white py-5 px-4 hover:bg-gray-50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600">
-          <div className="flex justify-between space-x-3">
-            <div className="min-w-0 flex-1">
-              <a href="#" className="block focus:outline-none">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-medium text-gray-900 truncate">SCMP</p>
-                <p className="text-sm text-gray-500 truncate">Velit placeat sit ducimus non sed</p>
-              </a>
-            </div>
-            <time dateTime="2021-01-27T16:35" className="flex-shrink-0 whitespace-nowrap text-sm text-gray-500">
-              2d ago
-            </time>
-          </div>
-          <div className="mt-1">
-            <p className="line-clamp-2 text-sm text-gray-600">
-              Doloremque dolorem maiores assumenda dolorem facilis. Velit vel in a rerum natus facere. Enim rerum eaque
-              qui facilis. Numquam laudantium sed id dolores omnis in. Eos reiciendis deserunt maiores et accusamus quod
-              dolor.
-            </p>
-          </div>
-        </li> */}
       </ul>
     </div>
   );
