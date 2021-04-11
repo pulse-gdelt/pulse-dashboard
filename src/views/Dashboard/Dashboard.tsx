@@ -3,7 +3,7 @@ import { ScatterPlot, data } from "../../components/ScatterPlot";
 import { getDomain } from "tldjs";
 import "./Dashboard.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faExternalLinkAlt, faQuoteLeft } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faQuoteLeft, faBook } from "@fortawesome/free-solid-svg-icons";
 import { faAngry, faSmileBeam, faMehBlank } from "@fortawesome/free-regular-svg-icons";
 
 // export function scatterPlotMouseOverHandler(event: any, datapoint: any): void {
@@ -101,7 +101,7 @@ export function Articles({ data }: { data: any }): JSX.Element {
   console.log("article data", data);
   let pane = null;
   if (data?.datapoint) {
-    const { DocTone, Title, URL, datetime, ContextualText, Location } = data.datapoint;
+    const { DocTone, Title, URL, datetime, ContextualText, Location, topic } = data.datapoint;
     pane = (
       <>
         <li className="my-3">
@@ -122,6 +122,16 @@ export function Articles({ data }: { data: any }): JSX.Element {
           {DocTone < -2 ? <FontAwesomeIcon className="mx-2" icon={faAngry} /> : null}
           {DocTone >= -2 && DocTone <= 2 ? <FontAwesomeIcon className="mx-2" icon={faMehBlank} /> : null}
           {DocTone.toFixed(2)}
+        </li>
+        <li className="my-3">
+        <FontAwesomeIcon className="mx-2" icon={faBook} />
+          {
+            topic.split("_").slice(1).map((topicKeyword: string) => 
+            (<span className="inline-flex items-center px-2.5 py-0.5 mx-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {topicKeyword}
+            </span>)
+            )
+          }
         </li>
         <li>
           <FontAwesomeIcon className="mx-2" icon={faQuoteLeft} />
