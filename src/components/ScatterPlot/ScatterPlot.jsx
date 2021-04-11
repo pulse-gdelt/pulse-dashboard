@@ -129,6 +129,9 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
         .attr("fill", function (d) {
           return color(d.DocTone);
         })
+        .on("click", function(event, datapoint) {
+          window.open(datapoint.URL)
+        })
         .on("mouseover", function(event, datapoint) {
           mouseoverHandler({event, datapoint})
         });
