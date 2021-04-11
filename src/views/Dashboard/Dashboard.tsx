@@ -1,12 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ScatterPlot, data } from "../../components/ScatterPlot";
 
-export function CenterPane(): JSX.Element {
+
+// export function scatterPlotMouseOverHandler(event: any, datapoint: any): void {
+//   console.log(datapoint)
+// }
+
+export function CenterPane({scatterPlotMouseOverHandler}: {scatterPlotMouseOverHandler: any}): JSX.Element {
+  const [ ss, setSs ] = useState({}) 
+  useEffect(() => {
+    const f = async () => {
+      console.log("sending query...")
+      const res = await fetch("https://localhost:9200/index3/_search", {
+        method: "POST",
+        body: JSON.stringify({
+          query: {
+            match: { Location: 'Singapore' }
+          }
+        })
+      })
+      setSs(res)
+    }
+    if (ss) {
+      console.log(ss)
+    }
+    f()
+  }, [ss])
+
   return (
     <>
       <div className="my-1 -mx-1 h-full bg-white shadow rounded-lg">
         <div className="px-4 py-5 h-full w-full flex">
-          <ScatterPlot dataParam={data} />
+          <ScatterPlot dataParam={data} mouseoverHandler={scatterPlotMouseOverHandler} />
         </div>
       </div>
     </>
@@ -14,6 +39,8 @@ export function CenterPane(): JSX.Element {
 }
 
 export function Dashboard(): JSX.Element {
+  const [ mouseoverDataPoint, scatterPlotMouseOverHandler ] = useState({})
+  
   return (
     <>
       <div className="flex flex-col my-1 px-1 w-1/5">
@@ -30,21 +57,27 @@ export function Dashboard(): JSX.Element {
       </div>
 
       <div className="flex flex-col my-1 px-1 w-3/5">
-        <CenterPane />
+        <CenterPane scatterPlotMouseOverHandler={scatterPlotMouseOverHandler} />
       </div>
 
       <div className="flex flex-col my-1 px-1 w-1/5 overflow-hidden">
-        <Articles />
+        <Articles data={mouseoverDataPoint} />
       </div>
     </>
   );
 }
-export function Articles(): JSX.Element {
+export function Articles({data}: {data: any}): JSX.Element {
+  
+  console.log("article data", data)
+  
   return (
-    <div className="m-1 h-full shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
-      <h3 className="text-lg leading-6 font-medium text-gray-900">Articles</h3>
+    <div className="m-1 h-full shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6 overflow-hidden">
+      <h3 className="text-lg leading-6 font-medium text-gray-900">News Event Information</h3>
       <ul className="divide-y divide-gray-200">
-        <li className="relative bg-white py-5 px-4 hover:bg-gray-50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600">
+        <p>
+          {JSON.stringify(data.datapoint, null, 2)}
+        </p>
+        {/* <li className="relative bg-white py-5 px-4 hover:bg-gray-50 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600">
           <div className="flex justify-between space-x-3">
             <div className="min-w-0 flex-1">
               <a href="#" className="block focus:outline-none">
@@ -106,7 +139,7 @@ export function Articles(): JSX.Element {
               dolor.
             </p>
           </div>
-        </li>
+        </li> */}
       </ul>
     </div>
   );
