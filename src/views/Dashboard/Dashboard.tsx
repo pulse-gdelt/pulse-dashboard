@@ -39,6 +39,7 @@ export function CenterPane({ scatterPlotMouseOverHandler }: { scatterPlotMouseOv
               },
             },
           },
+          _source: ["DocTone", "Title", "URL", "topic", "ContextualText", "Location", "DateTime"],
         }),
       } as any);
       console.timeEnd("data-fetch");
@@ -101,7 +102,7 @@ export function Articles({ data }: { data: any }): JSX.Element {
   console.log("article data", data);
   let pane = null;
   if (data?.datapoint) {
-    const { DocTone, Title, URL, datetime, ContextualText, Location, topic } = data.datapoint;
+    const { DocTone, Title, URL, DateTime, ContextualText, Location, topic } = data.datapoint;
     pane = (
       <>
         <li className="my-3">
@@ -124,14 +125,15 @@ export function Articles({ data }: { data: any }): JSX.Element {
           {DocTone.toFixed(2)}
         </li>
         <li className="my-3">
-        <FontAwesomeIcon className="mx-2" icon={faBook} />
-          {
-            topic.split("_").slice(1).map((topicKeyword: string) => 
-            (<span className="inline-flex items-center px-2.5 py-0.5 mx-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {topicKeyword}
-            </span>)
-            )
-          }
+          <FontAwesomeIcon className="mx-2" icon={faBook} />
+          {topic
+            .split("_")
+            .slice(1)
+            .map((topicKeyword: string) => (
+              <span className="inline-flex items-center px-2.5 py-0.5 mx-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {topicKeyword}
+              </span>
+            ))}
         </li>
         <li>
           <FontAwesomeIcon className="mx-2" icon={faQuoteLeft} />
@@ -143,9 +145,7 @@ export function Articles({ data }: { data: any }): JSX.Element {
   return (
     <div className="m-1 h-full shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6 overflow-hidden">
       <h3 className="text-lg leading-6 font-medium text-gray-900 mb-6">News Event Information</h3>
-      <ul>
-        {pane ?? <p className="text-3xl text-gray-400 italic">Mouseover something!</p>}
-      </ul>
+      <ul>{pane ?? <p className="text-3xl text-gray-400 italic">Mouseover something!</p>}</ul>
     </div>
   );
 }
