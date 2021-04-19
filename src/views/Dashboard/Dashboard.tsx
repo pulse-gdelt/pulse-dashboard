@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { ScatterPlot, data } from "../../components/ScatterPlot";
+import { ToneHistogram } from "../../components/ToneHistogram";
 import { getDomain } from "tldjs";
 import "./Dashboard.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExternalLinkAlt, faQuoteLeft, faBook } from "@fortawesome/free-solid-svg-icons";
 import { faAngry, faSmileBeam, faMehBlank } from "@fortawesome/free-regular-svg-icons";
-
-// export function scatterPlotMouseOverHandler(event: any, datapoint: any): void {
-//   console.log(datapoint)
-// }
+import { min } from "d3-array";
 
 export function Spinner(): JSX.Element {
   return <div className="m-auto loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-64 w-64"></div>;
@@ -70,19 +68,135 @@ export function CenterPane({ scatterPlotMouseOverHandler }: { scatterPlotMouseOv
   );
 }
 
+export function AverageTone({ startDate, endDate }: { startDate: Date; endDate: Date }): JSX.Element {
+  const [ss, setSs] = useState(0 as any);
+  useEffect(() => {
+    const f = async () => {
+      console.log(`sending query... ${startDate}, ${endDate}`);
+      console.time("data-fetch");
+      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/index3/_search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: {
+            bool: {
+              must: {
+                range: {
+                  DateTime: {
+                    gte: startDate.toJSON(),
+                    lte: endDate.toJSON(),
+                  },
+                },
+              },
+            },
+          },
+          aggs: {
+            averageTone: {
+              avg: {
+                field: "DocTone",
+              },
+            },
+          },
+        }),
+      } as any);
+      console.timeEnd("data-fetch");
+      setSs(parseFloat((await res.json()).aggregations.averageTone.value).toFixed(2));
+    };
+    if (ss) {
+      console.log(ss);
+    }
+    f();
+  }, []);
+  useEffect(() => {
+    console.log("avg tone data", ss);
+  }, [ss]);
+  const green = "text-green-600"
+  const red = "text-red-600"
+  const textClassName = `text-7xl -ml-5 ${ss >= 0 ? green : red }`
+  return (
+    <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
+      <h3 className="text-lg leading-6 font-medium text-gray-900">Average Tone</h3>
+      <div className="flex flex-col items-center content-center justify-center h-full">
+        <div className="flex">
+          <p className={textClassName}>{ss}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ToneHistogramPane({ startDate, endDate }: { startDate: Date; endDate: Date }): JSX.Element {
+  const [ss, setSs] = useState({} as any);
+  useEffect(() => {
+    const f = async () => {
+      console.log("sending query...");
+      console.time("data-fetch");
+      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/index3/_search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: {
+            bool: {
+              must: {
+                range: {
+                  DateTime: {
+                    gte: startDate.toJSON(),
+                    lte: endDate.toJSON(),
+                  },
+                },
+              },
+            },
+          },
+          aggs: {
+            doctone_distribution: {
+              histogram: {
+                field: "DocTone",
+                interval: 1,
+                keyed: true,
+              },
+            },
+          },
+        }),
+      } as any);
+      console.timeEnd("data-fetch");
+      setSs(await res.json());
+    };
+    if (ss) {
+      console.log(ss);
+    }
+    f();
+  }, []);
+
+  useEffect(() => {
+    console.log("histogram data", ss);
+  }, [ss]);
+
+  return (
+    <div className="flex flex-col m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
+      <h3 className="text-lg leading-6 font-medium text-gray-900">Tone Distribution</h3>
+      {ss.hits ? <ToneHistogram dataParam={ss} mouseoverHandler={() => {}} /> : null }
+    </div>
+  );
+}
+
 export function Dashboard(): JSX.Element {
   const [mouseoverDataPoint, scatterPlotMouseOverHandler] = useState({});
+  const [dates, setDates] = useState({
+    startDate: new Date("2021-03-11T00:00:00.000Z"),
+    endDate: new Date("2021-03-14T00:00:00.000Z"),
+  });
 
   return (
     <>
       <div className="flex flex-col my-1 px-1 w-1/5">
-        <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Average Tone</h3>
-        </div>
+        <AverageTone startDate={dates.startDate} endDate={dates.endDate} />
 
-        <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Tone Distribution</h3>
-        </div>
+        <ToneHistogramPane startDate={dates.startDate} endDate={dates.endDate} />
+
         <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">Trending</h3>
         </div>
