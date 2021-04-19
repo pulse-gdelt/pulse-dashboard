@@ -29,7 +29,7 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
         data.map((d) => d.species),
         d3.symbols.map((s) => d3.symbol().type(s)())
       );
-      const color = d3.scaleSequential().domain([1, 10]).interpolator(d3.interpolateRdYlGn);
+      const color = d3.scaleSequential().domain([-10, 10]).interpolator(d3.interpolateRdYlGn);
 
       const y = d3
         .scaleLinear()
