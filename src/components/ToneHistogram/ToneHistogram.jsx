@@ -59,7 +59,7 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
     if (width && data) {
       console.log("running histogram");
 
-      const margin = { top: 20, right: 5, bottom: 30, left: 20 };
+      const margin = { top: 20, right: 10, bottom: 20, left: 10 };
 
       const color = d3.scaleSequential().domain([1, 10]).interpolator(d3.interpolateRdYlGn);
 
@@ -93,15 +93,15 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
           .attr("transform", `translate(${margin.left},0)`)
           .call(d3.axisLeft(y))
           .call((g) => g.select(".domain").remove())
-          .call((g) =>
-            g
-              .append("text")
-              .attr("x", -margin.left)
-              .attr("y", 10)
-              .attr("fill", "currentColor")
-              .attr("text-anchor", "start")
-              .text(dAxes.y)
-          );
+          // .call((g) =>
+          //   g
+          //     .append("text")
+          //     .attr("x", -margin.left)
+          //     .attr("y", 10)
+          //     .attr("fill", "currentColor")
+          //     .attr("text-anchor", "start")
+          //     .text(dAxes.y)
+          // );
       const xAxis = (g) =>
         g
           .attr("transform", `translate(0,${height - margin.bottom + 2})`)
@@ -111,15 +111,15 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
             })
           )
           .call((g) => g.select(".domain").remove())
-          .call((g) =>
-            g
-              .append("text")
-              .attr("x", width)
-              .attr("y", margin.bottom - 4)
-              .attr("fill", "currentColor")
-              .attr("text-anchor", "end")
-              .text(dAxes.x)
-          );
+          // .call((g) =>
+          //   g
+          //     .append("text")
+          //     .attr("x", width)
+          //     .attr("y", margin.bottom - 4)
+          //     .attr("fill", "currentColor")
+          //     .attr("text-anchor", "end")
+          //     .text(dAxes.x)
+          // );
 
       const svg = d3
         .select("div#tone-histogram-container")
