@@ -114,9 +114,9 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
 
       svg.append("g").call(grid);
 
-      svg
-        .selectAll("circles")
-        .data(data)
+      const circles = svg.selectAll("circles").data(data);
+
+      circles
         .enter()
         .append("circle")
         .attr("cx", function (d) {
@@ -129,14 +129,17 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
         .attr("fill", function (d) {
           return color(d.DocTone);
         })
-        .on("click", function(event, datapoint) {
-          window.open(datapoint.URL)
+        .on("click", function (event, datapoint) {
+          window.open(datapoint.URL);
         })
-        .on("mouseover", function(event, datapoint) {
-          mouseoverHandler({event, datapoint})
+        .on("mouseover", function (event, datapoint) {
+          mouseoverHandler({ event, datapoint });
         });
+        circles.exit().remove();
+
+      return () => { console.log("cleanup scatterplot") ; d3.select("div#d3-container").selectAll("svg").remove() }
     }
-  }, [width, dataParam]);
+  }, [width, dataParam, ref.current]);
 
   return <div id="d3-container" className="" ref={ref}></div>;
 };

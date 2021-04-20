@@ -12,6 +12,8 @@
     "@fortawesome/free-regular-svg-icons": "^5.15.3",
     "@fortawesome/free-solid-svg-icons": "^5.15.3",
     "@fortawesome/react-fontawesome": "^0.1.14",
+    "@heroicons/react": "^1.0.1",
+    "@tailwindcss/forms": "^0.3.2",
     "axios": "^0.21.1",
     "d3": "^6.6.1",
     "node-fetch": "^2.6.1",
@@ -19,7 +21,8 @@
     "react-cool-dimensions": "^1.3.2",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
-    "tldjs": "^2.3.1"
+    "tldjs": "^2.3.1",
+    "use-debounce": "^6.0.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^11.0.0",

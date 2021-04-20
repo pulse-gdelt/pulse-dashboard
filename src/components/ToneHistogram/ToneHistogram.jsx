@@ -55,7 +55,7 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
 
     console.log("hist width", width);
     console.log("hist height", height);
-    console.log("data", data);
+    console.log("histogram data", data);
     if (width && data) {
       console.log("running histogram");
 
@@ -154,29 +154,8 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
           return height - margin.bottom - y(d.value);
         });
 
-      // svg.append("g").call(grid);
+        return () => { console.log("cleanup scatterplot") ; d3.select("div#tone-histogram-container").selectAll("svg").remove() }
 
-      // svg
-      //   .selectAll("circles")
-      //   .data(data)
-      //   .enter()
-      //   .append("circle")
-      //   .attr("cx", function (d) {
-      //     return x(d.datetime);
-      //   })
-      //   .attr("cy", function (d) {
-      //     return y(d.DocTone);
-      //   })
-      //   .attr("r", 3)
-      //   .attr("fill", function (d) {
-      //     return color(d.DocTone);
-      //   })
-      //   .on("click", function(event, datapoint) {
-      //     window.open(datapoint.URL)
-      //   })
-      //   .on("mouseover", function(event, datapoint) {
-      //     mouseoverHandler({event, datapoint})
-      //   });
     }
   }, [width, dataParam]);
 

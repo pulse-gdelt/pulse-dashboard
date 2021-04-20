@@ -6,59 +6,57 @@ import "./Dashboard.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExternalLinkAlt, faQuoteLeft, faBook } from "@fortawesome/free-solid-svg-icons";
 import { faAngry, faSmileBeam, faMehBlank } from "@fortawesome/free-regular-svg-icons";
-import { min } from "d3-array";
+import { SearchIcon } from "@heroicons/react/solid";
+import { useDebounce } from "use-debounce";
 
 export function Spinner(): JSX.Element {
   return <div className="m-auto loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-64 w-64"></div>;
 }
 
-export function CenterPane({ scatterPlotMouseOverHandler }: { scatterPlotMouseOverHandler: any }): JSX.Element {
-  const [ss, setSs] = useState({} as any);
+export default function Example({ setTextHandler }: { setTextHandler: any }) {
+  const [text, setText] = useState("Hello");
+  const [value] = useDebounce(text, 1000);
   useEffect(() => {
-    const f = async () => {
-      console.log("sending query...");
-      console.time("data-fetch");
-      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/index3/_search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          size: 10000,
-          query: {
-            bool: {
-              must: {
-                range: {
-                  DateTime: {
-                    gte: "2021-03-12T00:00:00.000Z",
-                    lte: "2021-03-13T00:00:00.000Z",
-                  },
-                },
-              },
-            },
-          },
-          _source: ["DocTone", "Title", "URL", "topic", "ContextualText", "Location", "DateTime"],
-        }),
-      } as any);
-      console.timeEnd("data-fetch");
-      setSs(await res.json());
-    };
-    if (ss) {
-      console.log(ss);
-    }
-    f();
-  }, []);
+      console.log("debounced, setting text");
+      setTextHandler(value);
+  }, [value]);
 
-  useEffect(() => {
-    console.log("newdata", ss);
-  }, [ss]);
+  return (
+    <div className="flex py-4">
+      <div className="mt-1 relative rounded-md shadow-sm">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+        </div>
+        <input
+          name="search-query"
+          id="search-query"
+          className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+          placeholder="words to search for"
+          onChange={(e) => {
+            setText(e.target.value);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
+export function CenterPane({
+  plotData,
+  scatterPlotMouseOverHandler,
+  searchFieldHandler,
+}: {
+  plotData: any;
+  scatterPlotMouseOverHandler: any;
+  searchFieldHandler: any;
+}): JSX.Element {
   return (
     <>
       <div className="my-1 -mx-1 h-full bg-white shadow rounded-lg">
-        <div className="px-4 py-5 h-full w-full flex content-around">
-          {ss.hits ? (
-            <ScatterPlot dataParam={ss.hits.hits} mouseoverHandler={scatterPlotMouseOverHandler} />
+        <div className="px-4 py-5 h-full w-full flex flex-col content-around">
+          <Example setTextHandler={searchFieldHandler} />
+          {plotData.hits ? (
+            <ScatterPlot dataParam={plotData.hits.hits} mouseoverHandler={scatterPlotMouseOverHandler} />
           ) : (
             <Spinner />
           )}
@@ -68,117 +66,28 @@ export function CenterPane({ scatterPlotMouseOverHandler }: { scatterPlotMouseOv
   );
 }
 
-export function AverageTone({ startDate, endDate }: { startDate: Date; endDate: Date }): JSX.Element {
-  const [ss, setSs] = useState(0 as any);
-  useEffect(() => {
-    const f = async () => {
-      console.log(`sending query... ${startDate}, ${endDate}`);
-      console.time("data-fetch");
-      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/index3/_search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: {
-            bool: {
-              must: {
-                range: {
-                  DateTime: {
-                    gte: startDate.toJSON(),
-                    lte: endDate.toJSON(),
-                  },
-                },
-              },
-            },
-          },
-          aggs: {
-            averageTone: {
-              avg: {
-                field: "DocTone",
-              },
-            },
-          },
-        }),
-      } as any);
-      console.timeEnd("data-fetch");
-      setSs(parseFloat((await res.json()).aggregations.averageTone.value).toFixed(2));
-    };
-    if (ss) {
-      console.log(ss);
-    }
-    f();
-  }, []);
-  useEffect(() => {
-    console.log("avg tone data", ss);
-  }, [ss]);
-  const green = "text-green-600"
-  const red = "text-red-600"
-  const textClassName = `text-7xl -ml-5 ${ss >= 0 ? green : red }`
+export function AverageTone({ plotData, startDate, endDate }: { plotData: any, startDate: Date; endDate: Date }): JSX.Element {
+  const averageToneScore = plotData?.aggregations ? parseFloat(plotData.aggregations.averageTone.value) : 0;
+  const green = "text-green-600";
+  const red = "text-red-600";
+  const textClassName = `text-7xl -ml-5 ${averageToneScore >= 0 ? green : red}`;
   return (
     <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
       <h3 className="text-lg leading-6 font-medium text-gray-900">Average Tone</h3>
       <div className="flex flex-col items-center content-center justify-center h-full">
         <div className="flex">
-          <p className={textClassName}>{ss}</p>
+          <p className={textClassName}>{averageToneScore.toFixed(2)}</p>
         </div>
       </div>
     </div>
   );
 }
 
-export function ToneHistogramPane({ startDate, endDate }: { startDate: Date; endDate: Date }): JSX.Element {
-  const [ss, setSs] = useState({} as any);
-  useEffect(() => {
-    const f = async () => {
-      console.log("sending query...");
-      console.time("data-fetch");
-      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/index3/_search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: {
-            bool: {
-              must: {
-                range: {
-                  DateTime: {
-                    gte: startDate.toJSON(),
-                    lte: endDate.toJSON(),
-                  },
-                },
-              },
-            },
-          },
-          aggs: {
-            doctone_distribution: {
-              histogram: {
-                field: "DocTone",
-                interval: 1,
-                keyed: true,
-              },
-            },
-          },
-        }),
-      } as any);
-      console.timeEnd("data-fetch");
-      setSs(await res.json());
-    };
-    if (ss) {
-      console.log(ss);
-    }
-    f();
-  }, []);
-
-  useEffect(() => {
-    console.log("histogram data", ss);
-  }, [ss]);
-
+export function ToneHistogramPane({plotData, startDate, endDate }: { plotData: any, startDate: Date; endDate: Date }): JSX.Element {
   return (
     <div className="flex flex-col m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
       <h3 className="text-lg leading-6 font-medium text-gray-900">Tone Distribution</h3>
-      {ss.hits ? <ToneHistogram dataParam={ss} mouseoverHandler={() => {}} /> : null }
+      {plotData?.hits ? <ToneHistogram dataParam={plotData} mouseoverHandler={() => {}} /> : null}
     </div>
   );
 }
@@ -190,12 +99,81 @@ export function Dashboard(): JSX.Element {
     endDate: new Date("2021-03-14T00:00:00.000Z"),
   });
 
+  const [queryText, setQueryText] = useState(undefined);
+
+  useEffect(() => {
+    if (queryText) {
+      console.log(`sending query for ${queryText}`);
+      setEsResults({})
+    }
+  }, [queryText]);
+  
+  const [elasticsearchResults, setEsResults] = useState({} as any);
+  useEffect(() => {
+    const executeElasticsearchCall = async () => {
+      console.log("sending query...");
+      console.time("data-fetch");
+      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/index3/_search", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          size: 10000,
+          query: {
+            bool: {
+              must:[ 
+                queryText ? {
+                  match: {
+                    ContextualText: queryText,
+                  },
+                } : null,
+                {
+                range: {
+                  DateTime: {
+                    gte: dates.startDate,
+                    lte: dates.endDate,
+                  },
+                },
+              }],
+            },
+          },
+          aggs: {
+            averageTone: {
+              avg: {
+                field: "DocTone",
+              },
+            },
+            doctone_distribution: {
+              histogram: {
+                field: "DocTone",
+                interval: 1,
+                keyed: true,
+              },
+            },
+          },
+          _source: ["DocTone", "Title", "URL", "topic", "ContextualText", "Location", "DateTime"],
+        }),
+      } as any);
+      console.timeEnd("data-fetch");
+      setEsResults(await res.json());
+    };
+    if (elasticsearchResults) {
+      console.log(elasticsearchResults);
+    }
+    executeElasticsearchCall();
+  }, [dates, queryText]);
+
+  useEffect(() => {
+    console.log("received search results", elasticsearchResults);
+  }, elasticsearchResults);
+
   return (
     <>
       <div className="flex flex-col my-1 px-1 w-1/5">
-        <AverageTone startDate={dates.startDate} endDate={dates.endDate} />
+        <AverageTone plotData={elasticsearchResults} startDate={dates.startDate} endDate={dates.endDate} />
 
-        <ToneHistogramPane startDate={dates.startDate} endDate={dates.endDate} />
+        <ToneHistogramPane plotData={elasticsearchResults} startDate={dates.startDate} endDate={dates.endDate} />
 
         <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">Trending</h3>
@@ -203,7 +181,11 @@ export function Dashboard(): JSX.Element {
       </div>
 
       <div className="flex flex-col my-1 px-1 w-3/5">
-        <CenterPane scatterPlotMouseOverHandler={scatterPlotMouseOverHandler} />
+        <CenterPane
+          plotData={elasticsearchResults}
+          searchFieldHandler={setQueryText}
+          scatterPlotMouseOverHandler={scatterPlotMouseOverHandler}
+        />
       </div>
 
       <div className="flex flex-col my-1 px-1 w-1/5 overflow-hidden">
