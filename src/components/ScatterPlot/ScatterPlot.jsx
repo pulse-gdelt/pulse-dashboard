@@ -14,7 +14,7 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
 
   useEffect(() => {
     window.d3 = d3;
-    window.lodash = lodash
+    window.lodash = lodash;
 
     const data = dataParam.map((d) => {
       return { ...d._source, datetime: new Date(d._source.DateTime) };
@@ -25,6 +25,7 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
     if (width && data) {
       console.log("running");
 
+      let selectedTopic = undefined;
       const margin = { top: 25, right: 20, bottom: 35, left: 40 };
 
       const colorCategory = d3.scaleOrdinal(
@@ -118,11 +119,12 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
 
       const circles = svg.selectAll("circles").data(data);
 
-      svg.on('click', () => {
-        console.log("clicked on background")
-        topicSelectionHandler(undefined)
-        d3.selectAll("circle").style("opacity", "1")
-      })
+      svg.on("click", () => {
+        console.log("clicked on background");
+        topicSelectionHandler(undefined);
+        d3.selectAll("circle").style("opacity", "1");
+        selectedTopic = undefined;
+      });
       circles
         .enter()
         .append("circle")
@@ -136,27 +138,32 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
         // .classed((d) => d.topic)
         .attr("class", (d) => `topic${d.topic}`)
         .attr("fill", function (d) {
-          return colorCategory(d.topic) 
+          return colorCategory(d.topic);
           // color(d.DocTone);
         })
         .on("click", function (event, datapoint) {
-          d3.selectAll("circle").style("opacity", "0.15")
+          d3.selectAll("circle").style("opacity", "0.15");
           // d3.selectAll(`.topic${datapoint.topic}`).style("fill", "black")
-          d3.selectAll(`.topic${datapoint.topic}`).style("opacity", "1")
-          topicSelectionHandler(datapoint.topic)
+          d3.selectAll(`.topic${datapoint.topic}`).style("opacity", "1");
+          topicSelectionHandler(datapoint.topic);
           event.stopPropagation();
-          console.log("clicked on", datapoint)
+          selectedTopic = datapoint.topic;
+          console.log("clicked on", datapoint);
           // window.open(datapoint.URL);
         })
         .on("mouseover", function (event, datapoint) {
-          mouseoverHandler({ event, datapoint });
+          if (!selectedTopic || datapoint.topic === selectedTopic) {
+            mouseoverHandler({ event, datapoint });
+          }
         });
-        circles.exit().remove();
+      circles.exit().remove();
 
-      return () => { console.log("cleanup scatterplot") ; d3.select("div#d3-container").selectAll("svg").remove() }
+      return () => {
+        console.log("cleanup scatterplot");
+        d3.select("div#d3-container").selectAll("svg").remove();
+      };
     }
   }, [width, dataParam, ref.current]);
-
 
   return <div id="d3-container" className="" ref={ref}></div>;
 };
