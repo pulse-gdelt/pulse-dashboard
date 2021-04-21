@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import "./ScatterPlot.css";
-
+import lodash from "lodash";
 import useDimensions from "react-cool-dimensions";
 
-export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
+export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler }) => {
   const { ref, width, height, entry, unobserve, observe } = useDimensions({
     onResize: ({ width, height, entry, unobserve, observe }) => {
       // Triggered whenever the size of the target is changed
@@ -14,6 +14,8 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
 
   useEffect(() => {
     window.d3 = d3;
+    window.lodash = lodash
+
     const data = dataParam.map((d) => {
       return { ...d._source, datetime: new Date(d._source.DateTime) };
     });
@@ -25,9 +27,9 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
 
       const margin = { top: 25, right: 20, bottom: 35, left: 40 };
 
-      const shape = d3.scaleOrdinal(
-        data.map((d) => d.species),
-        d3.symbols.map((s) => d3.symbol().type(s)())
+      const colorCategory = d3.scaleOrdinal(
+        data.map((d) => d.topic),
+        d3.schemeCategory10
       );
       const color = d3.scaleSequential().domain([-10, 10]).interpolator(d3.interpolateRdYlGn);
 
@@ -116,6 +118,11 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
 
       const circles = svg.selectAll("circles").data(data);
 
+      svg.on('click', () => {
+        console.log("clicked on background")
+        topicSelectionHandler(undefined)
+        d3.selectAll("circle").style("opacity", "1")
+      })
       circles
         .enter()
         .append("circle")
@@ -126,11 +133,20 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
           return y(d.DocTone);
         })
         .attr("r", 3)
+        // .classed((d) => d.topic)
+        .attr("class", (d) => `topic${d.topic}`)
         .attr("fill", function (d) {
-          return color(d.DocTone);
+          return colorCategory(d.topic) 
+          // color(d.DocTone);
         })
         .on("click", function (event, datapoint) {
-          window.open(datapoint.URL);
+          d3.selectAll("circle").style("opacity", "0.15")
+          // d3.selectAll(`.topic${datapoint.topic}`).style("fill", "black")
+          d3.selectAll(`.topic${datapoint.topic}`).style("opacity", "1")
+          topicSelectionHandler(datapoint.topic)
+          event.stopPropagation();
+          console.log("clicked on", datapoint)
+          // window.open(datapoint.URL);
         })
         .on("mouseover", function (event, datapoint) {
           mouseoverHandler({ event, datapoint });
@@ -140,6 +156,7 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler }) => {
       return () => { console.log("cleanup scatterplot") ; d3.select("div#d3-container").selectAll("svg").remove() }
     }
   }, [width, dataParam, ref.current]);
+
 
   return <div id="d3-container" className="" ref={ref}></div>;
 };

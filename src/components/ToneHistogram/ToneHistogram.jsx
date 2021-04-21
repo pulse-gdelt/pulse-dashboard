@@ -1,30 +1,47 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import "./ToneHistogram.css";
-
+import lodash from "lodash"
 import useDimensions from "react-cool-dimensions";
 
-export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
+export const ToneHistogram = ({ topicFilter, dataParam, mouseoverHandler }) => {
   const { ref, width, height, entry, unobserve, observe } = useDimensions({
     onResize: ({ width, height, entry, unobserve, observe }) => {
       // Triggered whenever the size of the target is changed
       console.log("resized", width);
     },
   });
-
+  console.log("histogram topic filter", topicFilter)
   useEffect(() => {
     window.d3 = d3;
     const data = dataParam;
 
     // Flatten the json object into a simple array of DocTone:count pairs to construct the historgram
     var nest = [];
-    console.log("aa", data.aggregations.doctone_distribution.buckets);
-    for (let bucket in data.aggregations.doctone_distribution.buckets) {
-      nest.push({
-        key: data.aggregations.doctone_distribution.buckets[bucket]["key"],
-        value: data.aggregations.doctone_distribution.buckets[bucket]["doc_count"],
-      });
+    console.log("aa", data);
+    // let buckets = lodash.toPairs(data.hits.hits).reduce((acc, val) => { acc[val[0]] = {key: Math.floor(val[0]), doc_count: val[1] }; return acc }, {})
+
+    // for (let bucket in data.aggregations.doctone_distribution.buckets) {
+    //   nest.push({
+    //     key: data.aggregations.doctone_distribution.buckets[bucket]["key"],
+    //     value: data.aggregations.doctone_distribution.buckets[bucket]["doc_count"],
+    //   });
+    // }
+    let datahits = undefined;
+    if (data.hits) {
+        datahits = data.hits.hits
+      if (topicFilter) {
+        datahits = data.hits.hits.filter(i => i._source.topic === topicFilter)
+      }
+      nest = lodash
+        .toPairs(lodash.countBy(datahits, (i) => parseFloat(Math.round(i._source.DocTone)).toFixed(1)))
+        .map((i) => {
+          return { key: i[0], value: i[1] };
+        });
+
+      nest = lodash.sortBy(nest, (point) => parseFloat(point.key))
     }
+    console.log("new nest", nest);
 
     // Push empty values into the array so that the 0 value tick is centered
     var tone_max = Math.max.apply(
@@ -51,7 +68,7 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
       }
     }
     nest = nest.filter((i) => i.key >= -15 && i.key <= 15);
-    console.log(nest);
+    console.log("nn", nest);
 
     console.log("hist width", width);
     console.log("hist height", height);
@@ -92,16 +109,8 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
         g
           .attr("transform", `translate(${margin.left},0)`)
           .call(d3.axisLeft(y))
-          .call((g) => g.select(".domain").remove())
-          // .call((g) =>
-          //   g
-          //     .append("text")
-          //     .attr("x", -margin.left)
-          //     .attr("y", 10)
-          //     .attr("fill", "currentColor")
-          //     .attr("text-anchor", "start")
-          //     .text(dAxes.y)
-          // );
+          .call((g) => g.select(".domain").remove());
+
       const xAxis = (g) =>
         g
           .attr("transform", `translate(0,${height - margin.bottom + 2})`)
@@ -110,16 +119,7 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
               return i % 3 !== 0 ? " " : interval;
             })
           )
-          .call((g) => g.select(".domain").remove())
-          // .call((g) =>
-          //   g
-          //     .append("text")
-          //     .attr("x", width)
-          //     .attr("y", margin.bottom - 4)
-          //     .attr("fill", "currentColor")
-          //     .attr("text-anchor", "end")
-          //     .text(dAxes.x)
-          // );
+          .call((g) => g.select(".domain").remove());
 
       const svg = d3
         .select("div#tone-histogram-container")
@@ -154,10 +154,12 @@ export const ToneHistogram = ({ dataParam, mouseoverHandler }) => {
           return height - margin.bottom - y(d.value);
         });
 
-        return () => { console.log("cleanup scatterplot") ; d3.select("div#tone-histogram-container").selectAll("svg").remove() }
-
+      return () => {
+        console.log("cleanup histogram");
+        d3.select("div#tone-histogram-container").selectAll("svg").remove();
+      };
     }
-  }, [width, dataParam]);
+  }, [width, dataParam, topicFilter]);
 
   return <div id="tone-histogram-container" className="" ref={ref}></div>;
 };

@@ -8,6 +8,7 @@ import { faExternalLinkAlt, faQuoteLeft, faBook } from "@fortawesome/free-solid-
 import { faAngry, faSmileBeam, faMehBlank } from "@fortawesome/free-regular-svg-icons";
 import { SearchIcon } from "@heroicons/react/solid";
 import { useDebounce } from "use-debounce";
+import lodash from "lodash";
 
 export function Spinner(): JSX.Element {
   return <div className="m-auto loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-64 w-64"></div>;
@@ -17,8 +18,8 @@ export default function Example({ setTextHandler }: { setTextHandler: any }) {
   const [text, setText] = useState("Hello");
   const [value] = useDebounce(text, 1000);
   useEffect(() => {
-      console.log("debounced, setting text");
-      setTextHandler(value);
+    console.log("debounced, setting text");
+    setTextHandler(value);
   }, [value]);
 
   return (
@@ -45,10 +46,12 @@ export function CenterPane({
   plotData,
   scatterPlotMouseOverHandler,
   searchFieldHandler,
+  topicSelectionHandler,
 }: {
   plotData: any;
   scatterPlotMouseOverHandler: any;
   searchFieldHandler: any;
+  topicSelectionHandler: any;
 }): JSX.Element {
   return (
     <>
@@ -56,7 +59,11 @@ export function CenterPane({
         <div className="px-4 py-5 h-full w-full flex flex-col content-around">
           <Example setTextHandler={searchFieldHandler} />
           {plotData.hits ? (
-            <ScatterPlot dataParam={plotData.hits.hits} mouseoverHandler={scatterPlotMouseOverHandler} />
+            <ScatterPlot
+              topicSelectionHandler={topicSelectionHandler}
+              dataParam={plotData.hits.hits}
+              mouseoverHandler={scatterPlotMouseOverHandler}
+            />
           ) : (
             <Spinner />
           )}
@@ -66,8 +73,33 @@ export function CenterPane({
   );
 }
 
-export function AverageTone({ plotData, startDate, endDate }: { plotData: any, startDate: Date; endDate: Date }): JSX.Element {
-  const averageToneScore = plotData?.aggregations ? parseFloat(plotData.aggregations.averageTone.value) : 0;
+export function AverageTone({
+  plotData,
+  startDate,
+  endDate,
+  topicFilter,
+}: {
+  plotData: any;
+  startDate: Date;
+  endDate: Date;
+  topicFilter: string | undefined;
+}): JSX.Element {
+  function average(nums: Array<number>) {
+    return nums.reduce((a, b) => a + b) / nums.length;
+  }
+  console.log("pd hits", plotData);
+  let averageToneScore;
+  averageToneScore = plotData?.aggregations ? parseFloat(plotData.aggregations.averageTone.value) : 0;
+  if (plotData.hits && topicFilter) {
+    averageToneScore = average(
+      plotData.hits.hits
+        // @ts-ignore
+        .filter((d) => d._source.topic === topicFilter)
+        // @ts-ignore
+        .map((d: { DocTone: any }) => d._source.DocTone)
+    );
+  }
+
   const green = "text-green-600";
   const red = "text-red-600";
   const textClassName = `text-7xl -ml-5 ${averageToneScore >= 0 ? green : red}`;
@@ -83,11 +115,21 @@ export function AverageTone({ plotData, startDate, endDate }: { plotData: any, s
   );
 }
 
-export function ToneHistogramPane({plotData, startDate, endDate }: { plotData: any, startDate: Date; endDate: Date }): JSX.Element {
+export function ToneHistogramPane({
+  plotData,
+  startDate,
+  endDate,
+  topicFilter
+}: {
+  plotData: any;
+  startDate: Date;
+  endDate: Date;
+  topicFilter: string | undefined
+}): JSX.Element {
   return (
     <div className="flex flex-col m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
       <h3 className="text-lg leading-6 font-medium text-gray-900">Tone Distribution</h3>
-      {plotData?.hits ? <ToneHistogram dataParam={plotData} mouseoverHandler={() => {}} /> : null}
+      {plotData?.hits ? <ToneHistogram topicFilter={topicFilter} dataParam={plotData} mouseoverHandler={() => {}} /> : null}
     </div>
   );
 }
@@ -100,20 +142,21 @@ export function Dashboard(): JSX.Element {
   });
 
   const [queryText, setQueryText] = useState(undefined);
+  const [topicSelection, setTopicSelection] = useState(undefined);
 
   useEffect(() => {
     if (queryText) {
       console.log(`sending query for ${queryText}`);
-      setEsResults({})
+      setEsResults({});
     }
   }, [queryText]);
-  
+
   const [elasticsearchResults, setEsResults] = useState({} as any);
   useEffect(() => {
     const executeElasticsearchCall = async () => {
       console.log("sending query...");
       console.time("data-fetch");
-      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/index3/_search", {
+      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/truncindex/_search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -122,20 +165,23 @@ export function Dashboard(): JSX.Element {
           size: 10000,
           query: {
             bool: {
-              must:[ 
-                queryText ? {
-                  match: {
-                    ContextualText: queryText,
-                  },
-                } : null,
+              must: [
+                queryText
+                  ? {
+                      match: {
+                        ContextualText: queryText,
+                      },
+                    }
+                  : null,
                 {
-                range: {
-                  DateTime: {
-                    gte: dates.startDate,
-                    lte: dates.endDate,
+                  range: {
+                    DateTime: {
+                      gte: dates.startDate,
+                      lte: dates.endDate,
+                    },
                   },
                 },
-              }],
+              ],
             },
           },
           aggs: {
@@ -168,12 +214,21 @@ export function Dashboard(): JSX.Element {
     console.log("received search results", elasticsearchResults);
   }, elasticsearchResults);
 
+  useEffect(() => {
+    console.log(topicSelection);
+  }, [topicSelection]);
+
   return (
     <>
       <div className="flex flex-col my-1 px-1 w-1/5">
-        <AverageTone plotData={elasticsearchResults} startDate={dates.startDate} endDate={dates.endDate} />
+        <AverageTone
+          topicFilter={topicSelection}
+          plotData={elasticsearchResults}
+          startDate={dates.startDate}
+          endDate={dates.endDate}
+        />
 
-        <ToneHistogramPane plotData={elasticsearchResults} startDate={dates.startDate} endDate={dates.endDate} />
+        <ToneHistogramPane topicFilter={topicSelection} plotData={elasticsearchResults} startDate={dates.startDate} endDate={dates.endDate} />
 
         <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">Trending</h3>
@@ -185,6 +240,7 @@ export function Dashboard(): JSX.Element {
           plotData={elasticsearchResults}
           searchFieldHandler={setQueryText}
           scatterPlotMouseOverHandler={scatterPlotMouseOverHandler}
+          topicSelectionHandler={setTopicSelection}
         />
       </div>
 
