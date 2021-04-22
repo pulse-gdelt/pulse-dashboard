@@ -6,7 +6,7 @@ import "./Dashboard.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExternalLinkAlt, faQuoteLeft, faBook } from "@fortawesome/free-solid-svg-icons";
 import { faAngry, faSmileBeam, faMehBlank } from "@fortawesome/free-regular-svg-icons";
-import { SearchIcon } from "@heroicons/react/solid";
+import { SearchIcon, CalendarIcon } from "@heroicons/react/solid";
 import { useDebounce } from "use-debounce";
 import lodash from "lodash";
 import { DateTime } from "luxon";
@@ -42,7 +42,7 @@ export function SearchField({
   };
   return (
     <div className="flex flex-row py-4">
-      <div className="mt-1 flex relative rounded-md shadow-sm">
+      <div className="my-2 flex relative rounded-md shadow-sm">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
         </div>
@@ -56,12 +56,18 @@ export function SearchField({
           }}
         />
       </div>
-      <div className="fiex">
-        <DayPickerInput
-          value={dates.startDate}
-          dayPickerProps={{ selectedDays: dates.startDate }}
-          onDayChange={handleDateSelect}
-        ></DayPickerInput>
+      <div className="flex flex-grow">&nbsp;</div>
+      <div className="flex flex-row my-2 text-right">
+        <div className="flex">
+          <CalendarIcon className="mx-1 mt-0.5 h-5 w-5 text-gray-400" aria-hidden="true" />
+        </div>
+        <div className="flex">
+          <DayPickerInput
+            value={dates.startDate}
+            dayPickerProps={{ selectedDays: dates.startDate }}
+            onDayChange={handleDateSelect}
+          ></DayPickerInput>
+        </div>
       </div>
     </div>
   );
