@@ -9,13 +9,16 @@ import { faAngry, faSmileBeam, faMehBlank } from "@fortawesome/free-regular-svg-
 import { SearchIcon } from "@heroicons/react/solid";
 import { useDebounce } from "use-debounce";
 import lodash from "lodash";
+import { DateTime } from "luxon";
+
+const ES_ENDPOINT = "https://walter-insurance-peter-generators.trycloudflare.com/";
 
 export function Spinner(): JSX.Element {
   return <div className="m-auto loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-64 w-64"></div>;
 }
 
-export default function Example({ setTextHandler }: { setTextHandler: any }) {
-  const [text, setText] = useState("Hello");
+export function SearchField({ setTextHandler }: { setTextHandler: any }) {
+  const [text, setText] = useState(undefined! as string);
   const [value] = useDebounce(text, 1000);
   useEffect(() => {
     console.log("debounced, setting text");
@@ -47,22 +50,25 @@ export function CenterPane({
   scatterPlotMouseOverHandler,
   searchFieldHandler,
   topicSelectionHandler,
+  externalTopic
 }: {
   plotData: any;
   scatterPlotMouseOverHandler: any;
   searchFieldHandler: any;
   topicSelectionHandler: any;
+  externalTopic: any;
 }): JSX.Element {
   return (
     <>
       <div className="my-1 -mx-1 h-full bg-white shadow rounded-lg">
         <div className="px-4 py-5 h-full w-full flex flex-col content-around">
-          <Example setTextHandler={searchFieldHandler} />
+          <SearchField setTextHandler={searchFieldHandler} />
           {plotData.hits ? (
             <ScatterPlot
               topicSelectionHandler={topicSelectionHandler}
               dataParam={plotData.hits.hits}
               mouseoverHandler={scatterPlotMouseOverHandler}
+              externalTopic={externalTopic}
             />
           ) : (
             <Spinner />
@@ -88,27 +94,31 @@ export function AverageTone({
     return nums.reduce((a, b) => a + b) / nums.length;
   }
   console.log("pd hits", plotData);
-  let averageToneScore;
+  let averageToneScore, articleCount;
   averageToneScore = plotData?.aggregations ? parseFloat(plotData.aggregations.averageTone.value) : 0;
+  articleCount = plotData?.hits?.hits?.length ?? 0;
   if (plotData.hits && topicFilter) {
+    let selectedArticles = plotData.hits.hits
+      // @ts-ignore
+      .filter((d) => d._source.topic === topicFilter);
     averageToneScore = average(
-      plotData.hits.hits
-        // @ts-ignore
-        .filter((d) => d._source.topic === topicFilter)
+      selectedArticles
         // @ts-ignore
         .map((d: { DocTone: any }) => d._source.DocTone)
     );
+    articleCount = selectedArticles.length;
   }
 
   const green = "text-green-600";
   const red = "text-red-600";
-  const textClassName = `text-7xl -ml-5 ${averageToneScore >= 0 ? green : red}`;
+  const textClassName = `text-center text-7xl -ml-1 ${averageToneScore >= 0 ? green : red}`;
   return (
     <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
-      <h3 className="text-lg leading-6 font-medium text-gray-900">Average Tone</h3>
+      <h3 className="text-lg leading-6 font-medium text-gray-900">Average Tone {`(${articleCount} articles)`}</h3>
       <div className="flex flex-col items-center content-center justify-center h-full">
-        <div className="flex">
-          <p className={textClassName}>{averageToneScore.toFixed(2)}</p>
+        <div className="flex flex-col items-center content-center justify-center">
+          <p className={`${textClassName} flex`}>{averageToneScore.toFixed(2)}</p>
+          {startDate ? <p className="flex text-xl text-center pt-10">for news on {DateTime.fromJSDate(startDate).toLocaleString(DateTime.DATE_MED)}</p> : undefined}
         </div>
       </div>
     </div>
@@ -119,17 +129,19 @@ export function ToneHistogramPane({
   plotData,
   startDate,
   endDate,
-  topicFilter
+  topicFilter,
 }: {
   plotData: any;
   startDate: Date;
   endDate: Date;
-  topicFilter: string | undefined
+  topicFilter: string | undefined;
 }): JSX.Element {
   return (
     <div className="flex flex-col m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
       <h3 className="text-lg leading-6 font-medium text-gray-900">Tone Distribution</h3>
-      {plotData?.hits ? <ToneHistogram topicFilter={topicFilter} dataParam={plotData} mouseoverHandler={() => {}} /> : null}
+      {plotData?.hits ? (
+        <ToneHistogram topicFilter={topicFilter} dataParam={plotData} mouseoverHandler={() => {}} />
+      ) : null}
     </div>
   );
 }
@@ -137,12 +149,51 @@ export function ToneHistogramPane({
 export function Dashboard(): JSX.Element {
   const [mouseoverDataPoint, scatterPlotMouseOverHandler] = useState({});
   const [dates, setDates] = useState({
-    startDate: new Date("2021-03-11T00:00:00.000Z"),
-    endDate: new Date("2021-03-14T00:00:00.000Z"),
+    startDate: undefined! as Date,
+    endDate: undefined! as Date,
   });
 
   const [queryText, setQueryText] = useState(undefined);
   const [topicSelection, setTopicSelection] = useState(undefined);
+  const [latestTrendingResults, setLatestTrendingResults] = useState({} as any);
+  const [trendingTopicSelection, setTrendingTopicSelection ] = useState(undefined! as string);
+
+
+  useEffect(() => {
+    const fetchLatestTrending = async () => {
+      console.log("fetching latest trending");
+      const res = await fetch(`${ES_ENDPOINT}trendingindex/_search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: {
+            match_all: {},
+          },
+          size: 1,
+          sort: [
+            {
+              DateTime: {
+                order: "desc",
+              },
+            },
+          ],
+        }),
+      } as any);
+      console.timeEnd("data-fetch");
+      const results = (await res.json()).hits.hits[0]._source;
+      const startingDate = DateTime.fromISO(results.DateTime).toUTC();
+      const endingDate = startingDate.plus({ days: 1 }).toUTC();
+
+      console.log("latest trending results", results);
+      console.log("latest trending date", startingDate, endingDate);
+      setDates({ startDate: startingDate.toJSDate(), endDate: endingDate.toJSDate() });
+
+      setLatestTrendingResults(results);
+    };
+    fetchLatestTrending();
+  }, []);
 
   useEffect(() => {
     if (queryText) {
@@ -154,55 +205,59 @@ export function Dashboard(): JSX.Element {
   const [elasticsearchResults, setEsResults] = useState({} as any);
   useEffect(() => {
     const executeElasticsearchCall = async () => {
-      console.log("sending query...");
-      console.time("data-fetch");
-      const res = await fetch("https://walter-insurance-peter-generators.trycloudflare.com/truncindex/_search", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          size: 10000,
-          query: {
-            bool: {
-              must: [
-                queryText
-                  ? {
-                      match: {
-                        ContextualText: queryText,
+      if (dates.startDate) {
+        console.log("sending query...");
+        console.time("data-fetch");
+        const res = await fetch(`${ES_ENDPOINT}truncindex/_search`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            size: 10000,
+            query: {
+              bool: {
+                must: [
+                  queryText
+                    ? {
+                        match: {
+                          ContextualText: queryText,
+                        },
+                      }
+                    : null,
+                  {
+                    range: {
+                      DateTime: {
+                        gte: dates.startDate,
+                        lt: dates.endDate,
                       },
-                    }
-                  : null,
-                {
-                  range: {
-                    DateTime: {
-                      gte: dates.startDate,
-                      lte: dates.endDate,
                     },
                   },
+                ],
+              },
+            },
+            aggs: {
+              averageTone: {
+                avg: {
+                  field: "DocTone",
                 },
-              ],
-            },
-          },
-          aggs: {
-            averageTone: {
-              avg: {
-                field: "DocTone",
+              },
+              doctone_distribution: {
+                histogram: {
+                  field: "DocTone",
+                  interval: 1,
+                  keyed: true,
+                },
               },
             },
-            doctone_distribution: {
-              histogram: {
-                field: "DocTone",
-                interval: 1,
-                keyed: true,
-              },
-            },
-          },
-          _source: ["DocTone", "Title", "URL", "topic", "ContextualText", "Location", "DateTime"],
-        }),
-      } as any);
-      console.timeEnd("data-fetch");
-      setEsResults(await res.json());
+            _source: ["DocTone", "Title", "URL", "topic", "ContextualText", "Location", "DateTime"],
+          }),
+        } as any);
+        console.timeEnd("data-fetch");
+        setEsResults(await res.json());
+      } else {
+        console.log("no dates found, skipping query");
+      }
     };
     if (elasticsearchResults) {
       console.log(elasticsearchResults);
@@ -212,11 +267,19 @@ export function Dashboard(): JSX.Element {
 
   useEffect(() => {
     console.log("received search results", elasticsearchResults);
-  }, elasticsearchResults);
+  }, [elasticsearchResults]);
 
   useEffect(() => {
     console.log(topicSelection);
   }, [topicSelection]);
+
+  useEffect(() => {
+    if (trendingTopicSelection && elasticsearchResults) {
+      const k = Array.from(new Set(elasticsearchResults.hits.hits.map((i: any) => i._source.topic)))
+      const topicMap = (lodash.fromPairs(k.map((el: any) => [ el.split("_").slice(1).join("_"), el ])))
+      setTopicSelection(topicMap[trendingTopicSelection])
+    }
+  }, [trendingTopicSelection, elasticsearchResults])
 
   return (
     <>
@@ -228,11 +291,14 @@ export function Dashboard(): JSX.Element {
           endDate={dates.endDate}
         />
 
-        <ToneHistogramPane topicFilter={topicSelection} plotData={elasticsearchResults} startDate={dates.startDate} endDate={dates.endDate} />
+        <ToneHistogramPane
+          topicFilter={topicSelection}
+          plotData={elasticsearchResults}
+          startDate={dates.startDate}
+          endDate={dates.endDate}
+        />
 
-        <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Trending</h3>
-        </div>
+        <Trending trendingTopicHandler={setTrendingTopicSelection} trendingList={latestTrendingResults} />
       </div>
 
       <div className="flex flex-col my-1 px-1 w-3/5">
@@ -241,6 +307,7 @@ export function Dashboard(): JSX.Element {
           searchFieldHandler={setQueryText}
           scatterPlotMouseOverHandler={scatterPlotMouseOverHandler}
           topicSelectionHandler={setTopicSelection}
+          externalTopic={topicSelection}
         />
       </div>
 
@@ -250,6 +317,38 @@ export function Dashboard(): JSX.Element {
     </>
   );
 }
+
+export function Trending({ trendingList, trendingTopicHandler }: { trendingTopicHandler: any, trendingList: any }): JSX.Element {
+  const topicsPairs = lodash.zip(trendingList.count, trendingList.rank);
+  const topicKeywords = topicsPairs.map((i) => i.join("_"));
+  console.log("trending topics", topicsPairs);
+  return (
+    <div className="m-1 h-1/3 shadow rounded-lg bg-white px-4 py-5 border-b border-gray-200 sm:px-6">
+      <h3 className="text-lg leading-6 font-medium text-gray-900">Trending</h3>
+      <ul className="list-decimal pl-6">
+        {topicsPairs.slice(0, 5).map((el) => {
+          return (
+            <li data-value={el[1]} className="my-3">
+              {String(el[1])
+                .split("_")
+                .map((topicKeyword: string) => (
+                  <span
+                    onClick={(e: any) => {
+                      trendingTopicHandler(e.target.parentNode.getAttribute("data-value"));
+                    }}
+                    className="inline-flex items-center px-2.5 py-0.5 mx-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  >
+                    {topicKeyword}
+                  </span>
+                ))}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export function Articles({ data }: { data: any }): JSX.Element {
   console.log("article data", data);
   let pane = null;

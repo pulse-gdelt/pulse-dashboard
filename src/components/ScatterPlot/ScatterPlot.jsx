@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import "./ScatterPlot.css";
 import lodash from "lodash";
+import * as luxon from "luxon";
 import useDimensions from "react-cool-dimensions";
 
-export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler }) => {
+export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler, externalTopic }) => {
   const { ref, width, height, entry, unobserve, observe } = useDimensions({
     onResize: ({ width, height, entry, unobserve, observe }) => {
       // Triggered whenever the size of the target is changed
@@ -15,6 +16,7 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
   useEffect(() => {
     window.d3 = d3;
     window.lodash = lodash;
+    window.luxon = luxon;
 
     const data = dataParam.map((d) => {
       return { ...d._source, datetime: new Date(d._source.DateTime) };
@@ -25,7 +27,8 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
     if (width && data) {
       console.log("running");
 
-      let selectedTopic = undefined;
+      let selectedTopic = externalTopic;
+      console.log(selectedTopic)
       const margin = { top: 25, right: 20, bottom: 35, left: 40 };
 
       const colorCategory = d3.scaleOrdinal(
@@ -141,6 +144,17 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
           return colorCategory(d.topic);
           // color(d.DocTone);
         })
+        .style("opacity", function(datapoint) {
+          if (selectedTopic) {
+            if (selectedTopic === datapoint.topic) {
+              return "1"
+            } else {
+              return "0.15"
+            }
+          } else {
+            return "1"
+          }
+        })
         .on("click", function (event, datapoint) {
           d3.selectAll("circle").style("opacity", "0.15");
           // d3.selectAll(`.topic${datapoint.topic}`).style("fill", "black")
@@ -149,6 +163,7 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
           event.stopPropagation();
           selectedTopic = datapoint.topic;
           console.log("clicked on", datapoint);
+          mouseoverHandler({ event, datapoint });
           // window.open(datapoint.URL);
         })
         .on("mouseover", function (event, datapoint) {
@@ -163,7 +178,7 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
         d3.select("div#d3-container").selectAll("svg").remove();
       };
     }
-  }, [width, dataParam, ref.current]);
+  }, [width, dataParam, ref.current, externalTopic]);
 
   return <div id="d3-container" className="" ref={ref}></div>;
 };
