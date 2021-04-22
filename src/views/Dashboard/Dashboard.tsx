@@ -10,6 +10,8 @@ import { SearchIcon } from "@heroicons/react/solid";
 import { useDebounce } from "use-debounce";
 import lodash from "lodash";
 import { DateTime } from "luxon";
+import DayPickerInput from "react-day-picker/DayPickerInput";
+import "react-day-picker/lib/style.css";
 
 const ES_ENDPOINT = "https://walter-insurance-peter-generators.trycloudflare.com/";
 
@@ -17,7 +19,15 @@ export function Spinner(): JSX.Element {
   return <div className="m-auto loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-64 w-64"></div>;
 }
 
-export function SearchField({ setTextHandler }: { setTextHandler: any }) {
+export function SearchField({
+  setTextHandler,
+  dates,
+  datesHandler,
+}: {
+  dates: any;
+  datesHandler: any;
+  setTextHandler: any;
+}) {
   const [text, setText] = useState(undefined! as string);
   const [value] = useDebounce(text, 1000);
   useEffect(() => {
@@ -25,9 +35,14 @@ export function SearchField({ setTextHandler }: { setTextHandler: any }) {
     setTextHandler(value);
   }, [value]);
 
+  const handleDateSelect = (newDate: any) => {
+    const newStartDate = DateTime.fromJSDate(newDate);
+    const newEndDate = newStartDate.plus({ day: 1 });
+    datesHandler({ startDate: newStartDate.toUTC().toJSDate(), endDate: newEndDate.toUTC().toJSDate() });
+  };
   return (
-    <div className="flex py-4">
-      <div className="mt-1 relative rounded-md shadow-sm">
+    <div className="flex flex-row py-4">
+      <div className="mt-1 flex relative rounded-md shadow-sm">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <SearchIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
         </div>
@@ -41,28 +56,39 @@ export function SearchField({ setTextHandler }: { setTextHandler: any }) {
           }}
         />
       </div>
+      <div className="fiex">
+        <DayPickerInput
+          value={dates.startDate}
+          dayPickerProps={{ selectedDays: dates.startDate }}
+          onDayChange={handleDateSelect}
+        ></DayPickerInput>
+      </div>
     </div>
   );
 }
 
 export function CenterPane({
   plotData,
+  dates,
   scatterPlotMouseOverHandler,
   searchFieldHandler,
   topicSelectionHandler,
-  externalTopic
+  externalTopic,
+  datesHandler,
 }: {
   plotData: any;
+  dates: any;
   scatterPlotMouseOverHandler: any;
   searchFieldHandler: any;
   topicSelectionHandler: any;
   externalTopic: any;
+  datesHandler: any;
 }): JSX.Element {
   return (
     <>
       <div className="my-1 -mx-1 h-full bg-white shadow rounded-lg">
         <div className="px-4 py-5 h-full w-full flex flex-col content-around">
-          <SearchField setTextHandler={searchFieldHandler} />
+          <SearchField dates={dates} datesHandler={datesHandler} setTextHandler={searchFieldHandler} />
           {plotData.hits ? (
             <ScatterPlot
               topicSelectionHandler={topicSelectionHandler}
@@ -118,7 +144,11 @@ export function AverageTone({
       <div className="flex flex-col items-center content-center justify-center h-full">
         <div className="flex flex-col items-center content-center justify-center">
           <p className={`${textClassName} flex`}>{averageToneScore.toFixed(2)}</p>
-          {startDate ? <p className="flex text-xl text-center pt-10">for news on {DateTime.fromJSDate(startDate).toLocaleString(DateTime.DATE_MED)}</p> : undefined}
+          {startDate ? (
+            <p className="flex text-xl text-center pt-10">
+              for news on {DateTime.fromJSDate(startDate).toLocaleString(DateTime.DATE_MED)}
+            </p>
+          ) : undefined}
         </div>
       </div>
     </div>
@@ -156,12 +186,23 @@ export function Dashboard(): JSX.Element {
   const [queryText, setQueryText] = useState(undefined);
   const [topicSelection, setTopicSelection] = useState(undefined);
   const [latestTrendingResults, setLatestTrendingResults] = useState({} as any);
-  const [trendingTopicSelection, setTrendingTopicSelection ] = useState(undefined! as string);
-
+  const [trendingTopicSelection, setTrendingTopicSelection] = useState(undefined! as string);
 
   useEffect(() => {
     const fetchLatestTrending = async () => {
       console.log("fetching latest trending");
+
+      let matchers = [{ match_all: {} }] as any;
+      if (dates.startDate) {
+        matchers.push({
+          range: {
+            DateTime: {
+              gte: dates.startDate,
+              lt: dates.endDate,
+            },
+          },
+        });
+      }
       const res = await fetch(`${ES_ENDPOINT}trendingindex/_search`, {
         method: "POST",
         headers: {
@@ -169,7 +210,9 @@ export function Dashboard(): JSX.Element {
         },
         body: JSON.stringify({
           query: {
-            match_all: {},
+            bool: {
+              must: matchers,
+            },
           },
           size: 1,
           sort: [
@@ -183,17 +226,19 @@ export function Dashboard(): JSX.Element {
       } as any);
       console.timeEnd("data-fetch");
       const results = (await res.json()).hits.hits[0]._source;
-      const startingDate = DateTime.fromISO(results.DateTime).toUTC();
-      const endingDate = startingDate.plus({ days: 1 }).toUTC();
+      if (!dates.startDate) {
+        const startingDate = DateTime.fromISO(results.DateTime).toUTC();
+        const endingDate = startingDate.plus({ days: 1 }).toUTC();
+        setDates({ startDate: startingDate.toJSDate(), endDate: endingDate.toJSDate() });
+        console.log("latest trending date", startingDate, endingDate);
+      }
 
       console.log("latest trending results", results);
-      console.log("latest trending date", startingDate, endingDate);
-      setDates({ startDate: startingDate.toJSDate(), endDate: endingDate.toJSDate() });
 
       setLatestTrendingResults(results);
     };
     fetchLatestTrending();
-  }, []);
+  }, [dates]);
 
   useEffect(() => {
     if (queryText) {
@@ -275,11 +320,11 @@ export function Dashboard(): JSX.Element {
 
   useEffect(() => {
     if (trendingTopicSelection && elasticsearchResults) {
-      const k = Array.from(new Set(elasticsearchResults.hits.hits.map((i: any) => i._source.topic)))
-      const topicMap = (lodash.fromPairs(k.map((el: any) => [ el.split("_").slice(1).join("_"), el ])))
-      setTopicSelection(topicMap[trendingTopicSelection])
+      const k = Array.from(new Set(elasticsearchResults.hits.hits.map((i: any) => i._source.topic)));
+      const topicMap = lodash.fromPairs(k.map((el: any) => [el.split("_").slice(1).join("_"), el]));
+      setTopicSelection(topicMap[trendingTopicSelection]);
     }
-  }, [trendingTopicSelection, elasticsearchResults])
+  }, [trendingTopicSelection, elasticsearchResults]);
 
   return (
     <>
@@ -303,6 +348,8 @@ export function Dashboard(): JSX.Element {
 
       <div className="flex flex-col my-1 px-1 w-3/5">
         <CenterPane
+          dates={dates}
+          datesHandler={setDates}
           plotData={elasticsearchResults}
           searchFieldHandler={setQueryText}
           scatterPlotMouseOverHandler={scatterPlotMouseOverHandler}
@@ -318,7 +365,13 @@ export function Dashboard(): JSX.Element {
   );
 }
 
-export function Trending({ trendingList, trendingTopicHandler }: { trendingTopicHandler: any, trendingList: any }): JSX.Element {
+export function Trending({
+  trendingList,
+  trendingTopicHandler,
+}: {
+  trendingTopicHandler: any;
+  trendingList: any;
+}): JSX.Element {
   const topicsPairs = lodash.zip(trendingList.count, trendingList.rank);
   const topicKeywords = topicsPairs.map((i) => i.join("_"));
   console.log("trending topics", topicsPairs);
