@@ -35,9 +35,10 @@ export function SearchField({
     setTextHandler(value);
   }, [value]);
 
-  const handleDateSelect = (newDate: any) => {
-    const newStartDate = DateTime.fromJSDate(newDate);
+  const handleDateSelect = (newDate: any, modifiers: any, input: any) => {
+    const newStartDate = (DateTime.fromFormat(newDate.toLocaleDateString("en-GB"), "dd/LL/yyyy", {zone: "UTC"}));
     const newEndDate = newStartDate.plus({ day: 1 });
+    console.log({ startDate: newStartDate.toUTC().toJSDate(), endDate: newEndDate.toUTC().toJSDate() })
     datesHandler({ startDate: newStartDate.toUTC().toJSDate(), endDate: newEndDate.toUTC().toJSDate() });
   };
   return (
