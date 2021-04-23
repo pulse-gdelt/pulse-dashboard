@@ -13,7 +13,7 @@ import { DateTime } from "luxon";
 import DayPickerInput from "react-day-picker/DayPickerInput";
 import "react-day-picker/lib/style.css";
 
-const ES_ENDPOINT = "https://walter-insurance-peter-generators.trycloudflare.com/";
+const ES_ENDPOINT = "https://es-api.nerd.sg/";
 
 export function Spinner(): JSX.Element {
   return <div className="m-auto loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-64 w-64"></div>;
