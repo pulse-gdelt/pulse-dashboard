@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { ScatterPlot, data } from "../../components/ScatterPlot";
+import { useEffect, useState } from "react";
+import { ScatterPlot } from "../../components/ScatterPlot";
 import { ToneHistogram } from "../../components/ToneHistogram";
 import { getDomain } from "tldjs";
 import "./Dashboard.css";

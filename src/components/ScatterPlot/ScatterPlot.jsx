@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import * as d3 from "d3";
 import "./ScatterPlot.css";
 import lodash from "lodash";
@@ -138,11 +138,9 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
           return y(d.DocTone);
         })
         .attr("r", 3)
-        // .classed((d) => d.topic)
         .attr("class", (d) => `topic${d.topic}`)
         .attr("fill", function (d) {
           return colorCategory(d.topic);
-          // color(d.DocTone);
         })
         .style("opacity", function(datapoint) {
           if (selectedTopic) {
@@ -157,14 +155,12 @@ export const ScatterPlot = ({ dataParam, mouseoverHandler, topicSelectionHandler
         })
         .on("click", function (event, datapoint) {
           d3.selectAll("circle").style("opacity", "0.15");
-          // d3.selectAll(`.topic${datapoint.topic}`).style("fill", "black")
           d3.selectAll(`.topic${datapoint.topic}`).style("opacity", "1");
           topicSelectionHandler(datapoint.topic);
           event.stopPropagation();
           selectedTopic = datapoint.topic;
           console.log("clicked on", datapoint);
           mouseoverHandler({ event, datapoint });
-          // window.open(datapoint.URL);
         })
         .on("mouseover", function (event, datapoint) {
           if (!selectedTopic || datapoint.topic === selectedTopic) {

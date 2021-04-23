@@ -7,7 +7,6 @@ import useDimensions from "react-cool-dimensions";
 export const ToneHistogram = ({ topicFilter, dataParam, mouseoverHandler }) => {
   const { ref, width, height, entry, unobserve, observe } = useDimensions({
     onResize: ({ width, height, entry, unobserve, observe }) => {
-      // Triggered whenever the size of the target is changed
       console.log("resized", width);
     },
   });
@@ -16,17 +15,8 @@ export const ToneHistogram = ({ topicFilter, dataParam, mouseoverHandler }) => {
     window.d3 = d3;
     const data = dataParam;
 
-    // Flatten the json object into a simple array of DocTone:count pairs to construct the historgram
     var nest = [];
     console.log("aa", data);
-    // let buckets = lodash.toPairs(data.hits.hits).reduce((acc, val) => { acc[val[0]] = {key: Math.floor(val[0]), doc_count: val[1] }; return acc }, {})
-
-    // for (let bucket in data.aggregations.doctone_distribution.buckets) {
-    //   nest.push({
-    //     key: data.aggregations.doctone_distribution.buckets[bucket]["key"],
-    //     value: data.aggregations.doctone_distribution.buckets[bucket]["doc_count"],
-    //   });
-    // }
     let datahits = undefined;
     if (data.hits) {
         datahits = data.hits.hits
@@ -43,7 +33,6 @@ export const ToneHistogram = ({ topicFilter, dataParam, mouseoverHandler }) => {
     }
     console.log("new nest", nest);
 
-    // Push empty values into the array so that the 0 value tick is centered
     var tone_max = Math.max.apply(
       Math,
       nest.map(function (o) {
@@ -78,8 +67,6 @@ export const ToneHistogram = ({ topicFilter, dataParam, mouseoverHandler }) => {
 
       const margin = { top: 20, right: 10, bottom: 20, left: 10 };
 
-      const color = d3.scaleSequential().domain([1, 10]).interpolator(d3.interpolateRdYlGn);
-
       const y = d3
         .scaleLinear()
         .domain([
@@ -103,13 +90,11 @@ export const ToneHistogram = ({ topicFilter, dataParam, mouseoverHandler }) => {
       console.log("y scale", y);
       const colorScheme = d3.scaleSequential().domain([-10, 10]).interpolator(d3.interpolateRdYlGn);
 
-      const dAxes = { x: "Time →", y: "↑ Document Tone" };
-
-      const yAxis = (g) =>
-        g
-          .attr("transform", `translate(${margin.left},0)`)
-          .call(d3.axisLeft(y))
-          .call((g) => g.select(".domain").remove());
+      // const yAxis = (g) =>
+      //   g
+      //     .attr("transform", `translate(${margin.left},0)`)
+      //     .call(d3.axisLeft(y))
+      //     .call((g) => g.select(".domain").remove());
 
       const xAxis = (g) =>
         g
@@ -132,8 +117,6 @@ export const ToneHistogram = ({ topicFilter, dataParam, mouseoverHandler }) => {
         .classed("svg-content", true);
 
       svg.append("g").call(xAxis);
-
-      // svg.append("g").call(yAxis);
 
       svg
         .selectAll(".bar")
