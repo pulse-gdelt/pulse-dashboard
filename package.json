@@ -16,6 +16,7 @@
     "@tailwindcss/forms": "^0.3.2",
     "axios": "^0.21.1",
     "d3": "^6.6.1",
+    "delay-cli": "^1.1.0",
     "lodash": "^4.17.21",
     "luxon": "^1.26.0",
     "node-fetch": "^2.6.1",
@@ -87,7 +88,7 @@
     "lint:fix": "npm run lint -- --fix",
     "start": "npm-run-all -p start:*",
     "start:css": "postcss src/tailwind.css -o src/index.css --watch",
-    "start:js": "sleep 2 && craco start",
+    "start:js": "delay 2 && craco start",
     "storybook": "start-storybook -p 9009 -s public",
     "storybook:build": "npm run build:css && build-storybook -s public",
     "test": "craco test"
